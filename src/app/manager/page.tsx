@@ -19,7 +19,8 @@ import {
   Lock,
   Unlock,
   ShieldCheck,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react';
 
 interface Athlete {
@@ -45,6 +46,7 @@ interface Event {
   name: string;
   description?: string;
   maxTeams: number;
+  city?: string | null;
   date: string;
   location?: string;
   scores?: any[];
@@ -89,7 +91,8 @@ export default function ManagerPanel() {
 
   const [eventName, setEventName] = useState('');
   const [eventDesc, setEventDesc] = useState('');
-  const [eventMaxTeams, setEventMaxTeams] = useState('10');
+  const [eventMaxTeams, setEventMaxTeams] = useState('12');
+  const [eventCity, setEventCity] = useState('Casablanca');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('Ain Diab, Casablanca');
 
@@ -138,6 +141,12 @@ export default function ManagerPanel() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -216,6 +225,7 @@ export default function ManagerPanel() {
           name: eventName.trim(),
           description: eventDesc.trim(),
           maxTeams: parseInt(eventMaxTeams, 10),
+          city: eventCity,
           date: eventDate,
           location: eventLocation.trim(),
         }),
@@ -227,7 +237,7 @@ export default function ManagerPanel() {
       showNotification('success', `Event "${data.name}" created successfully!`);
       setEventName('');
       setEventDesc('');
-      setEventMaxTeams('10');
+      setEventMaxTeams('12');
       setEventDate('');
       fetchData();
     } catch (err: any) {
@@ -331,7 +341,7 @@ export default function ManagerPanel() {
               Manager Panel
             </h1>
             <p className="text-gray-400 text-sm mt-1 max-w-xl">
-              Register teams, athletes, schedule relay & strength events, and record live scoring.
+              Register teams, athletes, schedule multi-city relay & strength events, and record live scoring.
             </p>
           </div>
 
@@ -401,7 +411,7 @@ export default function ManagerPanel() {
         </div>
       )}
 
-      {/* TAB CONTENT: OVERVIEW */}
+      {/* 1. TAB CONTENT: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -429,7 +439,7 @@ export default function ManagerPanel() {
                 <Calendar className="w-5 h-5 text-[#F59E0B]" />
               </div>
               <div className="text-3xl font-extrabold text-white mt-3">{events.length}</div>
-              <p className="text-xs text-gray-400 mt-1">Relays & Strength</p>
+              <p className="text-xs text-gray-400 mt-1">Across 5 Cities</p>
             </div>
 
             <div className="glass-panel p-5">
@@ -444,7 +454,7 @@ export default function ManagerPanel() {
         </div>
       )}
 
-      {/* TAB CONTENT: TEAMS */}
+      {/* 2. TAB CONTENT: TEAMS */}
       {activeTab === 'teams' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-4">
@@ -515,7 +525,238 @@ export default function ManagerPanel() {
         </div>
       )}
 
-      {/* TAB CONTENT: SCORES */}
+      {/* 3. TAB CONTENT: ATHLETES */}
+      {activeTab === 'athletes' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="glass-panel p-6 lg:col-span-1 space-y-4">
+            <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-[#F59E0B]" /> Register Athlete
+            </h3>
+            <form onSubmit={handleCreateAthlete} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Youssef El Mansouri"
+                  value={athleteName}
+                  onChange={(e) => setAthleteName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="athlete@domain.ma"
+                  value={athleteEmail}
+                  onChange={(e) => setAthleteEmail(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Role
+                </label>
+                <select
+                  value={athleteRole}
+                  onChange={(e) => setAthleteRole(e.target.value as any)}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="CAPTAIN">Captain</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Assign to Team (Optional)
+                </label>
+                <select
+                  value={athleteTeamId}
+                  onChange={(e) => setAthleteTeamId(e.target.value)}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                >
+                  <option value="">-- Select Team --</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] text-black font-extrabold py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-[#F59E0B]/20"
+              >
+                {submitting ? 'Registering...' : 'Register Athlete'}
+              </button>
+            </form>
+          </div>
+
+          <div className="glass-panel p-6 lg:col-span-2">
+            <h3 className="font-extrabold text-lg text-white mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#F59E0B]" /> Registered Athletes ({athletes.length})
+            </h3>
+            <div className="space-y-3">
+              {athletes.map(a => (
+                <div key={a.id} className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-bold text-white text-sm">{a.name}</div>
+                    <div className="text-gray-400">{a.email}</div>
+                  </div>
+                  <div className="text-right flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.role === 'CAPTAIN' ? 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40' : 'bg-white/10 text-gray-300'}`}>
+                      {a.role}
+                    </span>
+                    <span className="text-gray-400">{a.team?.name || 'Free Agent'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. TAB CONTENT: EVENTS */}
+      {activeTab === 'events' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="glass-panel p-6 lg:col-span-1 space-y-4">
+            <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#FF1E56]" /> Schedule Event
+            </h3>
+            <form onSubmit={handleCreateEvent} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Event Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ain Diab 5k Relay"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Relay rules, workout specs..."
+                  value={eventDesc}
+                  onChange={(e) => setEventDesc(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    City *
+                  </label>
+                  <select
+                    value={eventCity}
+                    onChange={(e) => setEventCity(e.target.value)}
+                    className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                  >
+                    <option value="Casablanca">Casablanca</option>
+                    <option value="Marrakech">Marrakech</option>
+                    <option value="Tangier">Tangier</option>
+                    <option value="Agadir">Agadir</option>
+                    <option value="Rabat">Rabat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    Max Teams *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={eventMaxTeams}
+                    onChange={(e) => setEventMaxTeams(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                  Location Venue
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ain Diab Beach, Casablanca"
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-bissap w-full py-2.5 text-sm"
+              >
+                {submitting ? 'Scheduling...' : 'Schedule Event'}
+              </button>
+            </form>
+          </div>
+
+          <div className="glass-panel p-6 lg:col-span-2">
+            <h3 className="font-extrabold text-lg text-white mb-4 flex items-center gap-2">
+              <Flag className="w-5 h-5 text-[#FF1E56]" /> Scheduled Events ({events.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {events.map((e) => (
+                <div key={e.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white text-base">{e.name}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FF1E56]/20 text-[#FF1E56]">
+                      {e.city || 'Casablanca'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{e.description || 'No description provided.'}</p>
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
+                    <span>📍 {e.location || e.city}</span>
+                    <span>Max {e.maxTeams} Teams</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. TAB CONTENT: SCORES */}
       {activeTab === 'scores' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-4">
@@ -555,7 +796,7 @@ export default function ManagerPanel() {
                   <option value="">-- Choose Event --</option>
                   {events.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.name}
+                      {e.name} ({e.city || 'Casablanca'})
                     </option>
                   ))}
                 </select>
