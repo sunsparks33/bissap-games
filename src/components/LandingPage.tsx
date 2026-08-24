@@ -135,9 +135,11 @@ export default function LandingPage({
       {/* BRAND ANNOUNCEMENT BADGE */}
       <div className="flex justify-center">
         <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/15 text-[#FF1E56] text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-xl shadow-[#FF1E56]/10 backdrop-blur-md">
-          <div className="relative w-6 h-6">
-            <Image src="/logo.png" alt="Bissap Games Logo" fill className="object-contain" />
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Bissap Games Logo" 
+            className="w-6 h-6 rounded-full object-contain bg-[#FAF8F5] p-0.5 border border-[#FF1E56]/40" 
+          />
           <span>Casablanca Coastal Arena • Ain Diab Championship</span>
         </div>
       </div>
