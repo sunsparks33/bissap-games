@@ -99,10 +99,10 @@ export default function LiveLeaderboard({ teams: propTeams, onRefresh }: LiveLea
 
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
               <Trophy className="w-8 h-8 text-[#F59E0B]" />
-              <span>Leaderboard Standings</span>
+              <span>National Leaderboard</span>
             </h2>
             <p className="text-sm text-gray-400 mt-1 max-w-xl">
-              Real-time standings tracking squad performance across Ain Diab Relay & Strength Challenges.
+              Real-time standings tracking squad performance across Casablanca, Marrakech, Tangier, Agadir, and Rabat.
             </p>
           </div>
 
@@ -123,7 +123,7 @@ export default function LiveLeaderboard({ teams: propTeams, onRefresh }: LiveLea
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search team or captain name..."
+              placeholder="Search team, captain, or city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF1E56] focus:ring-1 focus:ring-[#FF1E56] transition-all"

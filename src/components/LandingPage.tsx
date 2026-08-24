@@ -140,7 +140,7 @@ export default function LandingPage({
             alt="Bissap Games Logo" 
             className="w-6 h-6 rounded-full object-contain bg-[#FAF8F5] p-0.5 border border-[#FF1E56]/40" 
           />
-          <span>Casablanca Coastal Arena • Ain Diab Championship</span>
+          <span>Morocco National Tour • Casablanca • Marrakech • Tangier • Agadir • Rabat</span>
         </div>
       </div>
 
@@ -153,22 +153,22 @@ export default function LandingPage({
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/5 text-gray-300 text-xs font-semibold uppercase tracking-wider border border-white/10">
-              <Sparkles className="w-3.5 h-3.5 text-[#FF1E56]" /> Elite Fitness Tournament
+              <Sparkles className="w-3.5 h-3.5 text-[#FF1E56]" /> National Fitness Championship
             </div>
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.06]">
               Compete for the <br />
               <span className="text-gradient-bissap">Fittest Team</span> <br />
-              in Casablanca
+              in Morocco
             </h1>
 
             <p className="text-[#FF1E56] font-bold text-lg sm:text-xl tracking-wide">
-              Relay Races & High-Intensity Strength Challenges
+              Relay Races & High-Intensity Strength Challenges Across 5 Cities
             </p>
 
             <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-xl">
-              Assemble your roster of 4 athletes. Push your endurance, power through heavy sandbag relays, and conquer coastal strength challenges at Ain Diab.
+              Assemble your roster of 4 athletes. Push your endurance, power through heavy sandbag relays, and conquer coastal & mountain strength challenges across Casablanca, Marrakech, Tangier, Agadir, and Rabat.
             </p>
 
             {/* CTA BUTTONS */}
@@ -198,12 +198,12 @@ export default function LandingPage({
                 <div className="text-sm font-extrabold text-white mt-0.5">4 Athletes / Squad</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 font-semibold uppercase">Location</div>
-                <div className="text-sm font-extrabold text-white mt-0.5">Ain Diab Beach</div>
+                <div className="text-xs text-gray-400 font-semibold uppercase">Tour Scope</div>
+                <div className="text-sm font-extrabold text-white mt-0.5">5 Moroccan Cities</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 font-semibold uppercase">Prize Pool</div>
-                <div className="text-sm font-extrabold text-[#F59E0B] mt-0.5">Trophy & Medals</div>
+                <div className="text-sm font-extrabold text-[#F59E0B] mt-0.5">National Trophy</div>
               </div>
             </div>
           </div>

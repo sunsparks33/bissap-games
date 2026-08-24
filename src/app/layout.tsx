@@ -38,7 +38,7 @@ export default function RootLayout({
                   BISSAP GAMES
                 </span>
                 <span className="text-[10px] tracking-widest uppercase text-gray-400 font-bold block mt-0.5">
-                  Casablanca Series
+                  Morocco National Tour
                 </span>
               </div>
             </Link>

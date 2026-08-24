@@ -18,6 +18,7 @@ enum Role {
 model Team {
   id          String   @id @default(cuid())
   name        String   @unique
+  city        String?  @default("Casablanca")
   captainId   String?  @unique
   captain     Athlete? @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
   totalPoints Int      @default(0)
@@ -47,9 +48,10 @@ model Athlete {
 
 model Event {
   id          String   @id @default(cuid())
-  name        String   // e.g., 'Ain Diab 5k Relay' or 'Strength Challenge'
+  name        String   // e.g., 'Ain Diab 5k Relay' or 'Marrakech Palm Sprint'
   description String?
   maxTeams    Int
+  city        String?  @default("Casablanca")
   date        DateTime
   location    String?  @default("Ain Diab, Casablanca")
   createdAt   DateTime @default(now())
