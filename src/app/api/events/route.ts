@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { EventCreateSchema } from '@/lib/validations';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -23,19 +25,31 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { name, description, maxTeams, date, location } = body;
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
 
-    if (!name || !maxTeams || !date) {
-      return NextResponse.json({ error: 'Name, Max Teams, and Date are required' }, { status: 400 });
+  try {
+    const rawBody = await request.json();
+
+    const validation = EventCreateSchema.safeParse({
+      ...rawBody,
+      maxTeams: typeof rawBody.maxTeams === 'string' ? parseInt(rawBody.maxTeams, 10) : rawBody.maxTeams,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]?.message || 'Invalid event input';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
+
+    const { name, description, maxTeams, date, location } = validation.data;
 
     const event = await prisma.event.create({
       data: {
         name,
         description: description || null,
-        maxTeams: parseInt(maxTeams, 10),
+        maxTeams,
         date: new Date(date),
         location: location || 'Ain Diab, Casablanca',
       },

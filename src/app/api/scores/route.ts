@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { ScoreCreateSchema } from '@/lib/validations';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -20,57 +22,70 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { teamId, eventId, pointsAwarded, rank, notes } = body;
+  const rl = checkRateLimit(request, 30, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
 
-    if (!teamId || !eventId || pointsAwarded === undefined) {
-      return NextResponse.json({ error: 'Team ID, Event ID, and Points are required' }, { status: 400 });
+  try {
+    const rawBody = await request.json();
+
+    const validation = ScoreCreateSchema.safeParse({
+      ...rawBody,
+      pointsAwarded: typeof rawBody.pointsAwarded === 'string' ? parseInt(rawBody.pointsAwarded, 10) : rawBody.pointsAwarded,
+      rank: rawBody.rank ? (typeof rawBody.rank === 'string' ? parseInt(rawBody.rank, 10) : rawBody.rank) : null,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]?.message || 'Invalid score parameters';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    const points = parseInt(pointsAwarded, 10);
-    const parsedRank = rank ? parseInt(rank, 10) : null;
+    const { teamId, eventId, pointsAwarded, rank, notes } = validation.data;
 
-    // Upsert score (create or update existing team/event score)
-    const score = await prisma.score.upsert({
-      where: {
-        teamId_eventId: {
+    // Atomic transaction for score upsert + total calculation
+    const result = await prisma.$transaction(async (tx) => {
+      const score = await tx.score.upsert({
+        where: {
+          teamId_eventId: {
+            teamId,
+            eventId,
+          },
+        },
+        update: {
+          pointsAwarded,
+          rank: rank || null,
+          notes: notes || null,
+        },
+        create: {
           teamId,
           eventId,
+          pointsAwarded,
+          rank: rank || null,
+          notes: notes || null,
         },
-      },
-      update: {
-        pointsAwarded: points,
-        rank: parsedRank,
-        notes: notes || null,
-      },
-      create: {
-        teamId,
-        eventId,
-        pointsAwarded: points,
-        rank: parsedRank,
-        notes: notes || null,
-      },
-      include: {
-        team: true,
-        event: true,
-      },
+        include: {
+          team: true,
+          event: true,
+        },
+      });
+
+      const aggregate = await tx.score.aggregate({
+        where: { teamId },
+        _sum: { pointsAwarded: true },
+      });
+
+      const newTotal = aggregate._sum.pointsAwarded || 0;
+
+      await tx.team.update({
+        where: { id: teamId },
+        data: { totalPoints: newTotal },
+      });
+
+      return { score, newTotalPoints: newTotal };
     });
 
-    // Recalculate Team totalPoints
-    const aggregate = await prisma.score.aggregate({
-      where: { teamId },
-      _sum: { pointsAwarded: true },
-    });
-
-    const newTotal = aggregate._sum.pointsAwarded || 0;
-
-    await prisma.team.update({
-      where: { id: teamId },
-      data: { totalPoints: newTotal },
-    });
-
-    return NextResponse.json({ score, newTotalPoints: newTotal }, { status: 200 });
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
     console.error('Error submitting score:', error);
     return NextResponse.json({ error: 'Failed to submit score' }, { status: 500 });

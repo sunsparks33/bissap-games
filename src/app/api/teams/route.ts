@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { TeamCreateSchema } from '@/lib/validations';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -25,31 +27,45 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // 1. Rate limiting check
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
+
   try {
-    const body = await request.json();
-    const { name, captainId } = body;
-
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ error: 'Team name is required' }, { status: 400 });
+    const rawBody = await request.json();
+    
+    // 2. Validate payload with Zod
+    const validationResult = TeamCreateSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0]?.message || 'Invalid team input payload';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
-    const team = await prisma.team.create({
-      data: {
-        name,
-        captainId: captainId || null,
-      },
-      include: {
-        captain: true,
-      },
-    });
+    const { name, captainId } = validationResult.data;
 
-    // If captainId was passed, also make sure athlete's teamId points to this team
-    if (captainId) {
-      await prisma.athlete.update({
-        where: { id: captainId },
-        data: { teamId: team.id, role: 'CAPTAIN' },
+    // 3. Execute DB operations in an atomic transaction
+    const team = await prisma.$transaction(async (tx) => {
+      const createdTeam = await tx.team.create({
+        data: {
+          name,
+          captainId: captainId || null,
+        },
+        include: {
+          captain: true,
+        },
       });
-    }
+
+      if (captainId) {
+        await tx.athlete.update({
+          where: { id: captainId },
+          data: { teamId: createdTeam.id, role: 'CAPTAIN' },
+        });
+      }
+
+      return createdTeam;
+    });
 
     return NextResponse.json(team, { status: 201 });
   } catch (error: any) {

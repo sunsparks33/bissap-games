@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
+import { AthleteCreateSchema } from '@/lib/validations';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -21,35 +23,48 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { name, email, role, teamId } = body;
+  // 1. Rate limiting check
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
 
-    if (!name || !email) {
-      return NextResponse.json({ error: 'Name and Email are required' }, { status: 400 });
+  try {
+    const rawBody = await request.json();
+
+    // 2. Validate input with Zod
+    const validation = AthleteCreateSchema.safeParse(rawBody);
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]?.message || 'Invalid athlete data';
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
+    const { name, email, role, teamId } = validation.data;
     const athleteRole = role === 'CAPTAIN' ? Role.CAPTAIN : Role.MEMBER;
 
-    const athlete = await prisma.athlete.create({
-      data: {
-        name,
-        email,
-        role: athleteRole,
-        teamId: teamId || null,
-      },
-      include: {
-        team: true,
-      },
-    });
-
-    // If role is CAPTAIN and teamId is provided, update team's captainId
-    if (athleteRole === Role.CAPTAIN && teamId) {
-      await prisma.team.update({
-        where: { id: teamId },
-        data: { captainId: athlete.id },
+    // 3. Atomic transaction execution
+    const athlete = await prisma.$transaction(async (tx) => {
+      const createdAthlete = await tx.athlete.create({
+        data: {
+          name,
+          email,
+          role: athleteRole,
+          teamId: teamId || null,
+        },
+        include: {
+          team: true,
+        },
       });
-    }
+
+      if (athleteRole === Role.CAPTAIN && teamId) {
+        await tx.team.update({
+          where: { id: teamId },
+          data: { captainId: createdAthlete.id },
+        });
+      }
+
+      return createdAthlete;
+    });
 
     return NextResponse.json(athlete, { status: 201 });
   } catch (error: any) {
