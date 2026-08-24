@@ -26,6 +26,8 @@ import {
 import MultiStepTeamRegistration, { TeamRegistrationFormData } from './MultiStepTeamRegistration';
 import LiveLeaderboard, { LeaderboardTeam } from './LiveLeaderboard';
 
+import Image from 'next/image';
+
 interface EventItem {
   id: string;
   name: string;
@@ -132,8 +134,10 @@ export default function LandingPage({
     <div className="space-y-12 sm:space-y-16 pb-20">
       {/* BRAND ANNOUNCEMENT BADGE */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF1E56]/10 border border-[#FF1E56]/30 text-[#FF1E56] text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-lg shadow-[#FF1E56]/10">
-          <Flame className="w-4 h-4 text-[#FF1E56] animate-pulse" />
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/15 text-[#FF1E56] text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-xl shadow-[#FF1E56]/10 backdrop-blur-md">
+          <div className="relative w-6 h-6">
+            <Image src="/logo.png" alt="Bissap Games Logo" fill className="object-contain" />
+          </div>
           <span>Casablanca Coastal Arena • Ain Diab Championship</span>
         </div>
       </div>
