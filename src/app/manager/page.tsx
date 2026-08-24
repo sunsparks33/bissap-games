@@ -119,14 +119,30 @@ export default function ManagerPanel() {
   const [scoreRank, setScoreRank] = useState('');
   const [scoreNotes, setScoreNotes] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === '1234' || passcode === 'admin' || passcode === 'bissap2026') {
+    setAuthError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
       setIsAuthenticated(true);
-      setAuthError('');
+      setPasscode('');
       fetchData();
-    } else {
-      setAuthError('Invalid Admin Passcode. Please try again.');
+    } catch (err: any) {
+      setAuthError(err.message || 'Invalid Admin Passcode. Access denied.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -529,7 +545,7 @@ export default function ManagerPanel() {
               </label>
               <input
                 type="password"
-                placeholder="Enter passcode (e.g. 1234)"
+                placeholder="Enter admin security passcode"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
