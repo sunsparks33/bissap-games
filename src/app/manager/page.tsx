@@ -197,7 +197,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     setAuthError('');
     setLoading(true);
-    await showLoadingAlert('Authenticating...', 'Verifying admin passcode with server security.');
+    showLoadingAlert('Authenticating...', 'Verifying admin passcode with server security.');
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -228,7 +228,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!teamName.trim()) return;
     setSubmitting(true);
-    await showLoadingAlert('Creating Squad...', 'Registering new team entry in database.');
+    showLoadingAlert('Creating Squad...', 'Registering new team entry in database.');
 
     try {
       const res = await fetch('/api/teams', {
@@ -255,7 +255,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!captainName.trim() || !captainEmail.trim()) return;
     setSubmitting(true);
-    await showLoadingAlert('Registering Captain...', 'Adding new captain and setting team assignment.');
+    showLoadingAlert('Registering Captain...', 'Adding new captain and setting team assignment.');
 
     try {
       const res = await fetch('/api/athletes', {
@@ -288,7 +288,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!assignTeamId || !assignCaptainId) return;
     setSubmitting(true);
-    await showLoadingAlert('Linking Captain...', 'Updating squad leadership assignment.');
+    showLoadingAlert('Linking Captain...', 'Updating squad leadership assignment.');
 
     try {
       const res = await fetch('/api/teams', {
@@ -318,7 +318,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!athleteName.trim() || !athleteEmail.trim()) return;
     setSubmitting(true);
-    await showLoadingAlert('Registering Athlete...', 'Adding athlete details to national roster.');
+    showLoadingAlert('Registering Athlete...', 'Adding athlete details to national roster.');
 
     try {
       const res = await fetch('/api/athletes', {
@@ -352,7 +352,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!eventName.trim() || !eventDate || !eventMaxTeams) return;
     setSubmitting(true);
-    await showLoadingAlert('Scheduling Event...', 'Adding event to Moroccan National Tour calendar.');
+    showLoadingAlert('Scheduling Event...', 'Adding event to Moroccan National Tour calendar.');
 
     try {
       const res = await fetch('/api/events', {
@@ -388,7 +388,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!scoreTeamId || !scoreEventId || !scorePoints) return;
     setSubmitting(true);
-    await showLoadingAlert('Awarding Points...', 'Logging event scores & computing leaderboard standings.');
+    showLoadingAlert('Awarding Points...', 'Logging event scores & computing leaderboard standings.');
 
     try {
       const res = await fetch('/api/scores', {
@@ -425,7 +425,7 @@ export default function ManagerPanel() {
     const confirmed = await showConfirmAlert(`Delete Team "${name}"?`, 'This will unlink squad members and remove the team entry.', 'Yes, Delete Team');
     if (!confirmed) return;
 
-    await showLoadingAlert('Deleting Team...', 'Removing team and updating dependencies.');
+    showLoadingAlert('Deleting Team...', 'Removing team and updating dependencies.');
     try {
       const res = await fetch(`/api/teams?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete team');
@@ -440,7 +440,7 @@ export default function ManagerPanel() {
     const confirmed = await showConfirmAlert(`Delete Athlete "${name}"?`, 'This athlete will be removed from squad rosters.', 'Yes, Delete');
     if (!confirmed) return;
 
-    await showLoadingAlert('Deleting Athlete...', 'Removing athlete from roster.');
+    showLoadingAlert('Deleting Athlete...', 'Removing athlete from roster.');
     try {
       const res = await fetch(`/api/athletes?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete athlete');
@@ -455,7 +455,7 @@ export default function ManagerPanel() {
     const confirmed = await showConfirmAlert(`Delete Event "${name}"?`, 'This event will be removed from the tour schedule.', 'Yes, Delete');
     if (!confirmed) return;
 
-    await showLoadingAlert('Deleting Event...', 'Removing event entry.');
+    showLoadingAlert('Deleting Event...', 'Removing event entry.');
     try {
       const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete event');
@@ -470,7 +470,7 @@ export default function ManagerPanel() {
     const confirmed = await showConfirmAlert('Delete Score Entry?', 'Team total points will be recalculated automatically.', 'Yes, Delete');
     if (!confirmed) return;
 
-    await showLoadingAlert('Deleting Score...', 'Removing score entry & updating standings.');
+    showLoadingAlert('Deleting Score...', 'Removing score entry & updating standings.');
     try {
       const res = await fetch(`/api/scores?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete score');
@@ -485,7 +485,7 @@ export default function ManagerPanel() {
   const handleUpdateTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeam) return;
-    await showLoadingAlert('Updating Team...', 'Saving team changes to database.');
+    showLoadingAlert('Updating Team...', 'Saving team changes to database.');
     try {
       const res = await fetch('/api/teams', {
         method: 'PUT',
@@ -508,7 +508,7 @@ export default function ManagerPanel() {
   const handleUpdateAthleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAthlete) return;
-    await showLoadingAlert('Updating Athlete...', 'Saving athlete roster details.');
+    showLoadingAlert('Updating Athlete...', 'Saving athlete roster details.');
     try {
       const res = await fetch('/api/athletes', {
         method: 'PUT',
@@ -533,7 +533,7 @@ export default function ManagerPanel() {
   const handleUpdateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
-    await showLoadingAlert('Updating Event...', 'Saving event schedule details.');
+    showLoadingAlert('Updating Event...', 'Saving event schedule details.');
     try {
       const res = await fetch('/api/events', {
         method: 'PUT',
@@ -560,7 +560,7 @@ export default function ManagerPanel() {
   const handleUpdateScoreSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingScore) return;
-    await showLoadingAlert('Updating Score...', 'Recalculating team standings.');
+    showLoadingAlert('Updating Score...', 'Recalculating team standings.');
     try {
       const res = await fetch('/api/scores', {
         method: 'POST',

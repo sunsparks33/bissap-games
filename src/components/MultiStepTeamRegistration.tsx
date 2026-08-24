@@ -103,13 +103,16 @@ export default function MultiStepTeamRegistration({ onSuccess, onClose }: MultiS
 
   // Submit Handler
   const onSubmit = async (data: TeamRegistrationFormData) => {
-    // Show 3-second loading animation timer popup
-    await showLoadingAlert('Registering Team...', 'Transmitting squad parameters to Bissap Games National Tour database.');
+    // 1. Show Loading Alert
+    showLoadingAlert('Registering Team...', 'Transmitting squad parameters to Bissap Games National Tour database.');
+
+    // Simulate database write delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     setSubmittedData(data);
     setShowToast(true);
 
-    // Show 3-second success popup
+    // 2. Show 3-second Auto-Dismiss Success Popup
     await showSuccessAlert('Squad Registered!', `Team "${data.teamName}" has been successfully entered into the National Tour.`);
 
     if (onSuccess) {

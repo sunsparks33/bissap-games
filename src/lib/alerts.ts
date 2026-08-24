@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 // Base dark theme configuration matching Bissap Games design system
 const customSwal = Swal.mixin({
@@ -11,31 +12,30 @@ const customSwal = Swal.mixin({
     popup: 'glass-panel-elevated border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl',
     title: 'text-xl font-extrabold text-white tracking-tight',
     htmlContainer: 'text-sm text-gray-300 font-medium',
-    confirmButton: 'px-5 py-2.5 rounded-xl font-bold bg-gradient-to-r from-[#FF1E56] to-[#9E002B] text-white shadow-lg shadow-[#FF1E56]/30 hover:opacity-90 transition-all border-0',
-    cancelButton: 'px-5 py-2.5 rounded-xl font-bold bg-white/10 text-gray-300 hover:bg-white/20 transition-all border border-white/10',
+    confirmButton: 'px-5 py-2.5 rounded-xl font-bold bg-gradient-to-r from-[#FF1E56] to-[#9E002B] text-white shadow-lg shadow-[#FF1E56]/30 hover:opacity-90 transition-all border-0 cursor-pointer',
+    cancelButton: 'px-5 py-2.5 rounded-xl font-bold bg-white/10 text-gray-300 hover:bg-white/20 transition-all border border-white/10 cursor-pointer',
     timerProgressBar: 'bg-[#FF1E56]',
   },
 });
 
 /**
- * Show 3-second loading animation timer popup that auto-disappears after completion
+ * Show Loading Alert with spinner
  */
 export const showLoadingAlert = (title: string = 'Processing Request...', text: string = 'Please wait while we sync with the database.') => {
-  return customSwal.fire({
+  customSwal.fire({
     title,
     text,
-    timer: 3000,
-    timerProgressBar: true,
     allowOutsideClick: false,
     allowEscapeKey: false,
+    showConfirmButton: false,
     didOpen: () => {
-      Swal.showLoading();
+      customSwal.showLoading();
     },
   });
 };
 
 /**
- * Show Success Alert with 3-second timer
+ * Show Success Alert with 3-second auto-close progress timer
  */
 export const showSuccessAlert = (title: string, text?: string) => {
   return customSwal.fire({
@@ -50,7 +50,7 @@ export const showSuccessAlert = (title: string, text?: string) => {
 };
 
 /**
- * Show Error Alert with 3-second timer
+ * Show Error Alert with 3-second auto-close progress timer
  */
 export const showErrorAlert = (title: string, text?: string) => {
   return customSwal.fire({
@@ -80,6 +80,13 @@ export const showConfirmAlert = async (title: string, text: string, confirmText:
   });
 
   return result.isConfirmed;
+};
+
+/**
+ * Close any active SweetAlert popups manually if needed
+ */
+export const closeAlert = () => {
+  customSwal.close();
 };
 
 export default customSwal;
