@@ -43,7 +43,6 @@ export async function POST(request: Request) {
 
     const { teamId, eventId, pointsAwarded, rank, notes } = validation.data;
 
-    // Atomic transaction for score upsert + total calculation
     const result = await prisma.$transaction(async (tx) => {
       const score = await tx.score.upsert({
         where: {
@@ -89,5 +88,53 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error submitting score:', error);
     return NextResponse.json({ error: 'Failed to submit score' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Score ID is required for deletion' }, { status: 400 });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const existingScore = await tx.score.findUnique({
+        where: { id },
+      });
+
+      if (!existingScore) return;
+
+      const teamId = existingScore.teamId;
+
+      await tx.score.delete({
+        where: { id },
+      });
+
+      // Recalculate Team Total Points
+      const aggregate = await tx.score.aggregate({
+        where: { teamId },
+        _sum: { pointsAwarded: true },
+      });
+
+      const newTotal = aggregate._sum.pointsAwarded || 0;
+
+      await tx.team.update({
+        where: { id: teamId },
+        data: { totalPoints: newTotal },
+      });
+    });
+
+    return NextResponse.json({ message: 'Score deleted successfully and team points recalculated' }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error deleting score:', error);
+    return NextResponse.json({ error: 'Failed to delete score' }, { status: 500 });
   }
 }

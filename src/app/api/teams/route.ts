@@ -82,27 +82,29 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { teamId, captainId } = body;
+    const { id, teamId, name, captainId } = body;
+    const targetTeamId = id || teamId;
 
-    if (!teamId || !captainId) {
-      return NextResponse.json({ error: 'Team ID and Captain ID are required' }, { status: 400 });
+    if (!targetTeamId) {
+      return NextResponse.json({ error: 'Team ID is required' }, { status: 400 });
     }
 
     const updatedTeam = await prisma.$transaction(async (tx) => {
-      // 1. Update Athlete to be CAPTAIN of this team
-      await tx.athlete.update({
-        where: { id: captainId },
-        data: {
-          teamId,
-          role: 'CAPTAIN',
-        },
-      });
+      if (captainId) {
+        await tx.athlete.update({
+          where: { id: captainId },
+          data: {
+            teamId: targetTeamId,
+            role: 'CAPTAIN',
+          },
+        });
+      }
 
-      // 2. Update Team captain reference
       const team = await tx.team.update({
-        where: { id: teamId },
+        where: { id: targetTeamId },
         data: {
-          captainId,
+          ...(name ? { name: name.trim() } : {}),
+          ...(captainId !== undefined ? { captainId: captainId || null } : {}),
         },
         include: {
           captain: true,
@@ -115,7 +117,47 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updatedTeam, { status: 200 });
   } catch (error: any) {
-    console.error('Error assigning captain:', error);
-    return NextResponse.json({ error: 'Failed to assign captain to team' }, { status: 500 });
+    console.error('Error updating team:', error);
+    return NextResponse.json({ error: 'Failed to update team' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Team ID is required for deletion' }, { status: 400 });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Unlink captain
+      await tx.team.update({
+        where: { id },
+        data: { captainId: null },
+      });
+
+      // 2. Unlink athletes from team
+      await tx.athlete.updateMany({
+        where: { teamId: id },
+        data: { teamId: null, role: 'MEMBER' },
+      });
+
+      // 3. Delete team (scores cascade delete via FK onDelete: Cascade)
+      await tx.team.delete({
+        where: { id },
+      });
+    });
+
+    return NextResponse.json({ message: 'Team deleted successfully' }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error deleting team:', error);
+    return NextResponse.json({ error: 'Failed to delete team' }, { status: 500 });
   }
 }

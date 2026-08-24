@@ -21,7 +21,10 @@ import {
   ShieldCheck,
   Zap,
   MapPin,
-  UserCheck
+  UserCheck,
+  Pencil,
+  Trash2,
+  X
 } from 'lucide-react';
 
 interface Athlete {
@@ -81,12 +84,16 @@ export default function ManagerPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Edit Modals State
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editingScore, setEditingScore] = useState<Score | null>(null);
+
   // Form states
-  // 1. Team form
   const [teamName, setTeamName] = useState('');
   const [teamCaptainId, setTeamCaptainId] = useState('');
 
-  // 2. Captain form & Assign form
   const [captainName, setCaptainName] = useState('');
   const [captainEmail, setCaptainEmail] = useState('');
   const [captainTeamId, setCaptainTeamId] = useState('');
@@ -94,13 +101,11 @@ export default function ManagerPanel() {
   const [assignTeamId, setAssignTeamId] = useState('');
   const [assignCaptainId, setAssignCaptainId] = useState('');
 
-  // 3. Athlete form
   const [athleteName, setAthleteName] = useState('');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [athleteRole, setAthleteRole] = useState<'CAPTAIN' | 'MEMBER'>('MEMBER');
   const [athleteTeamId, setAthleteTeamId] = useState('');
 
-  // 4. Event form
   const [eventName, setEventName] = useState('');
   const [eventDesc, setEventDesc] = useState('');
   const [eventMaxTeams, setEventMaxTeams] = useState('12');
@@ -108,7 +113,6 @@ export default function ManagerPanel() {
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('Ain Diab, Casablanca');
 
-  // 5. Score form
   const [scoreTeamId, setScoreTeamId] = useState('');
   const [scoreEventId, setScoreEventId] = useState('');
   const [scorePoints, setScorePoints] = useState('');
@@ -166,7 +170,7 @@ export default function ManagerPanel() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Submit Handlers
+  // --- CREATE HANDLERS ---
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim()) return;
@@ -213,7 +217,7 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to register captain');
 
-      showNotification('success', `Captain "${data.name}" created and assigned successfully!`);
+      showNotification('success', `Captain "${data.name}" created successfully!`);
       setCaptainName('');
       setCaptainEmail('');
       setCaptainTeamId('');
@@ -357,6 +361,152 @@ export default function ManagerPanel() {
     }
   };
 
+  // --- DELETE HANDLERS ---
+  const handleDeleteTeam = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete Team "${name}"? This action cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/teams?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete team');
+      showNotification('success', `Team "${name}" deleted.`);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleDeleteAthlete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete Athlete "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/athletes?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete athlete');
+      showNotification('success', `Athlete "${name}" deleted.`);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete Event "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete event');
+      showNotification('success', `Event "${name}" deleted.`);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleDeleteScore = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this score entry?')) return;
+    try {
+      const res = await fetch(`/api/scores?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete score');
+      showNotification('success', 'Score entry deleted and team total points recalculated.');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  // --- UPDATE SUBMIT HANDLERS ---
+  const handleUpdateTeamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeam) return;
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingTeam.id,
+          name: editingTeam.name,
+          captainId: editingTeam.captainId || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update team');
+      showNotification('success', 'Team updated successfully.');
+      setEditingTeam(null);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleUpdateAthleteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAthlete) return;
+    try {
+      const res = await fetch('/api/athletes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingAthlete.id,
+          name: editingAthlete.name,
+          email: editingAthlete.email,
+          role: editingAthlete.role,
+          teamId: editingAthlete.teamId || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update athlete');
+      showNotification('success', 'Athlete updated successfully.');
+      setEditingAthlete(null);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleUpdateEventSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+    try {
+      const res = await fetch('/api/events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingEvent.id,
+          name: editingEvent.name,
+          description: editingEvent.description,
+          maxTeams: editingEvent.maxTeams,
+          city: editingEvent.city,
+          date: editingEvent.date,
+          location: editingEvent.location,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update event');
+      showNotification('success', 'Event updated successfully.');
+      setEditingEvent(null);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
+  const handleUpdateScoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingScore) return;
+    try {
+      const res = await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId: editingScore.teamId,
+          eventId: editingScore.eventId,
+          pointsAwarded: editingScore.pointsAwarded,
+          rank: editingScore.rank,
+          notes: editingScore.notes,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update score');
+      showNotification('success', 'Score updated successfully.');
+      setEditingScore(null);
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
@@ -418,7 +568,7 @@ export default function ManagerPanel() {
               Manager Panel
             </h1>
             <p className="text-gray-400 text-sm mt-1 max-w-xl">
-              Register teams, captains, athletes, schedule multi-city events, and record live scoring.
+              Full CRUD management: Create, Edit & Delete Teams, Captains, Athletes, Events, and Scores.
             </p>
           </div>
 
@@ -602,8 +752,24 @@ export default function ManagerPanel() {
                         <span>{t.athletes?.length || 0} Roster Members</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-extrabold text-lg text-gradient-bissap">{t.totalPoints} pts</div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-extrabold text-lg text-gradient-bissap">{t.totalPoints} pts</div>
+                      </div>
+                      <button
+                        onClick={() => setEditingTeam(t)}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10"
+                        title="Edit Team"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTeam(t.id, t.name)}
+                        className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                        title="Delete Team"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -613,11 +779,10 @@ export default function ManagerPanel() {
         </div>
       )}
 
-      {/* 3. TAB CONTENT: CAPTAINS (NEW DEDICATED CAPTAINS TAB) */}
+      {/* 3. TAB CONTENT: CAPTAINS */}
       {activeTab === 'captains' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-6">
-            {/* Form 1: Add New Captain */}
             <div className="space-y-4">
               <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
                 <Crown className="w-5 h-5 text-[#F59E0B]" /> Add New Captain
@@ -679,7 +844,6 @@ export default function ManagerPanel() {
               </form>
             </div>
 
-            {/* Form 2: Assign Captain to Existing Team */}
             <div className="pt-6 border-t border-white/10 space-y-4">
               <h3 className="font-extrabold text-base text-white flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-[#FF1E56]" /> Assign Captain to Team
@@ -753,7 +917,7 @@ export default function ManagerPanel() {
                       </div>
                       <div className="text-xs text-gray-400 mt-1">{c.email}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-3">
                       {c.team ? (
                         <div className="text-sm font-extrabold text-white bg-white/10 px-3 py-1 rounded-lg border border-white/10">
                           {c.team.name}
@@ -761,6 +925,20 @@ export default function ManagerPanel() {
                       ) : (
                         <span className="text-xs text-gray-500 italic">Unassigned Squad</span>
                       )}
+                      <button
+                        onClick={() => setEditingAthlete(c)}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
+                        title="Edit Captain"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAthlete(c.id, c.name)}
+                        className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                        title="Delete Captain"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -862,11 +1040,25 @@ export default function ManagerPanel() {
                       <div className="font-bold text-white text-sm">{a.name}</div>
                       <div className="text-gray-400">{a.email}</div>
                     </div>
-                    <div className="text-right flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.role === 'CAPTAIN' ? 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40' : 'bg-white/10 text-gray-300'}`}>
                         {a.role}
                       </span>
                       <span className="text-gray-300 font-semibold">{a.team?.name || 'Free Agent'}</span>
+                      <button
+                        onClick={() => setEditingAthlete(a)}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 ml-2"
+                        title="Edit Athlete"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAthlete(a.id, a.name)}
+                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                        title="Delete Athlete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -989,7 +1181,7 @@ export default function ManagerPanel() {
                 <div className="col-span-2 py-8 text-center text-gray-500 text-sm">No events scheduled yet.</div>
               ) : (
                 events.map((e) => (
-                  <div key={e.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                  <div key={e.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 relative group">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white text-base">{e.name}</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FF1E56]/20 text-[#FF1E56]">
@@ -999,7 +1191,22 @@ export default function ManagerPanel() {
                     <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{e.description || 'No description provided.'}</p>
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
                       <span>📍 {e.location || e.city}</span>
-                      <span>Max {e.maxTeams} Teams</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditingEvent(e)}
+                          className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-300"
+                          title="Edit Event"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(e.id, e.name)}
+                          className="p-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400"
+                          title="Delete Event"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1095,7 +1302,7 @@ export default function ManagerPanel() {
           </div>
 
           <div className="glass-panel p-6 lg:col-span-2 space-y-4">
-            <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
+            <h3 className="font-extrabold text-lg text-white mb-4 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-emerald-400" /> Score Log History ({scores.length})
             </h3>
             <div className="space-y-3">
@@ -1108,13 +1315,240 @@ export default function ManagerPanel() {
                       <div className="font-bold text-white text-sm">{s.team?.name}</div>
                       <div className="text-gray-400">{s.event?.name}</div>
                     </div>
-                    <div className="text-right font-extrabold text-emerald-400 text-base">
-                      +{s.pointsAwarded} pts
+                    <div className="flex items-center gap-3">
+                      <div className="text-right font-extrabold text-emerald-400 text-base">
+                        +{s.pointsAwarded} pts
+                      </div>
+                      <button
+                        onClick={() => setEditingScore(s)}
+                        className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-300"
+                        title="Edit Score"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteScore(s.id)}
+                        className="p-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400"
+                        title="Delete Score"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- EDIT MODALS --- */}
+      {/* 1. EDIT TEAM MODAL */}
+      {editingTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel-elevated max-w-md w-full p-6 space-y-4 bg-[#0F0F1A] border-white/20 relative">
+            <button onClick={() => setEditingTeam(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-[#FF1E56]" /> Edit Team
+            </h3>
+            <form onSubmit={handleUpdateTeamSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Team Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingTeam.name}
+                  onChange={(e) => setEditingTeam({ ...editingTeam, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Team Captain</label>
+                <select
+                  value={editingTeam.captainId || ''}
+                  onChange={(e) => setEditingTeam({ ...editingTeam, captainId: e.target.value })}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                >
+                  <option value="">-- No Captain --</option>
+                  {athletes.map(a => (
+                    <option key={a.id} value={a.id}>{a.name} ({a.email})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingTeam(null)} className="btn-secondary flex-1 py-2 text-xs">Cancel</button>
+                <button type="submit" className="btn-bissap flex-1 py-2 text-xs">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. EDIT ATHLETE MODAL */}
+      {editingAthlete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel-elevated max-w-md w-full p-6 space-y-4 bg-[#0F0F1A] border-white/20 relative">
+            <button onClick={() => setEditingAthlete(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-[#F59E0B]" /> Edit Athlete
+            </h3>
+            <form onSubmit={handleUpdateAthleteSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingAthlete.name}
+                  onChange={(e) => setEditingAthlete({ ...editingAthlete, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={editingAthlete.email}
+                  onChange={(e) => setEditingAthlete({ ...editingAthlete, email: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Role</label>
+                <select
+                  value={editingAthlete.role}
+                  onChange={(e) => setEditingAthlete({ ...editingAthlete, role: e.target.value as any })}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="CAPTAIN">Captain</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Assigned Team</label>
+                <select
+                  value={editingAthlete.teamId || ''}
+                  onChange={(e) => setEditingAthlete({ ...editingAthlete, teamId: e.target.value })}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                >
+                  <option value="">-- Free Agent (Unassigned) --</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingAthlete(null)} className="btn-secondary flex-1 py-2 text-xs">Cancel</button>
+                <button type="submit" className="w-full bg-[#F59E0B] text-black font-extrabold py-2 rounded-xl text-xs flex-1">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. EDIT EVENT MODAL */}
+      {editingEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel-elevated max-w-md w-full p-6 space-y-4 bg-[#0F0F1A] border-white/20 relative">
+            <button onClick={() => setEditingEvent(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-[#FF1E56]" /> Edit Event
+            </h3>
+            <form onSubmit={handleUpdateEventSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Event Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingEvent.name}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">City</label>
+                <select
+                  value={editingEvent.city || 'Casablanca'}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, city: e.target.value })}
+                  className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                >
+                  <option value="Casablanca">Casablanca</option>
+                  <option value="Marrakech">Marrakech</option>
+                  <option value="Tangier">Tangier</option>
+                  <option value="Agadir">Agadir</option>
+                  <option value="Rabat">Rabat</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Location Venue</label>
+                <input
+                  type="text"
+                  value={editingEvent.location || ''}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingEvent(null)} className="btn-secondary flex-1 py-2 text-xs">Cancel</button>
+                <button type="submit" className="btn-bissap flex-1 py-2 text-xs">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. EDIT SCORE MODAL */}
+      {editingScore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="glass-panel-elevated max-w-md w-full p-6 space-y-4 bg-[#0F0F1A] border-white/20 relative">
+            <button onClick={() => setEditingScore(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-emerald-400" /> Edit Score
+            </h3>
+            <form onSubmit={handleUpdateScoreSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Points Awarded</label>
+                <input
+                  type="number"
+                  required
+                  value={editingScore.pointsAwarded}
+                  onChange={(e) => setEditingScore({ ...editingScore, pointsAwarded: parseInt(e.target.value, 10) || 0 })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-300 uppercase mb-1">Performance Notes</label>
+                <input
+                  type="text"
+                  value={editingScore.notes || ''}
+                  onChange={(e) => setEditingScore({ ...editingScore, notes: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingScore(null)} className="btn-secondary flex-1 py-2 text-xs">Cancel</button>
+                <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-xl text-xs flex-1">Save Changes</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
