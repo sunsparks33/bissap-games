@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import MultiStepTeamRegistration, { TeamRegistrationFormData } from './MultiStepTeamRegistration';
 import LiveLeaderboard, { LeaderboardTeam } from './LiveLeaderboard';
+import { useLanguage } from '@/context/LanguageContext';
 
 import Image from 'next/image';
 
@@ -51,6 +52,7 @@ export default function LandingPage({
   totalAthletes = 0,
   totalScores = 0,
 }: LandingPageProps) {
+  const { t } = useLanguage();
   const [teams, setTeams] = useState<LeaderboardTeam[]>(initialTeams);
   const [events] = useState<EventItem[]>(initialEvents);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -126,7 +128,7 @@ export default function LandingPage({
         setIsModalOpen(false);
       }, 2000);
     } catch (err) {
-      console.error('Registration processing error:', err);
+      console.error('Error handling team registration', err);
     }
   };
 
@@ -140,7 +142,7 @@ export default function LandingPage({
             alt="Bissap Games Logo" 
             className="w-6 h-6 rounded-full object-contain bg-[#FAF8F5] p-0.5 border border-[#FF1E56]/40" 
           />
-          <span>Morocco National Tour • Casablanca • Marrakech • Tangier • Agadir • Rabat</span>
+          <span>{t('announcementBadge')}</span>
         </div>
       </div>
 
@@ -158,17 +160,12 @@ export default function LandingPage({
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.06]">
-              Compete for the <br />
-              <span className="text-gradient-bissap">Fittest Team</span> <br />
-              in Morocco
+              {t('heroTitlePart1')} <br />
+              <span className="text-gradient-bissap">{t('heroTitlePart2')}</span>
             </h1>
 
-            <p className="text-[#FF1E56] font-bold text-lg sm:text-xl tracking-wide">
-              Relay Races & High-Intensity Strength Challenges Across 5 Cities
-            </p>
-
             <p className="text-gray-300 text-sm sm:text-base leading-relaxed max-w-xl">
-              Assemble your roster of 4 athletes. Push your endurance, power through heavy sandbag relays, and conquer coastal & mountain strength challenges across Casablanca, Marrakech, Tangier, Agadir, and Rabat.
+              {t('heroSubtitle')}
             </p>
 
             {/* CTA BUTTONS */}
@@ -178,7 +175,7 @@ export default function LandingPage({
                 className="btn-bissap text-base sm:text-lg px-8 py-4 w-full sm:w-auto shadow-xl shadow-[#FF1E56]/30 border border-white/20"
               >
                 <Users className="w-5 h-5" />
-                <span>Register Your Team</span>
+                <span>{t('btnRegisterSquad')}</span>
                 <ArrowRight className="w-5 h-5 ml-1" />
               </button>
 
@@ -187,7 +184,7 @@ export default function LandingPage({
                 className="btn-secondary text-base px-6 py-4 w-full sm:w-auto text-center"
               >
                 <Trophy className="w-5 h-5 text-[#F59E0B]" />
-                <span>View Standings</span>
+                <span>{t('btnViewLeaderboard')}</span>
               </a>
             </div>
 

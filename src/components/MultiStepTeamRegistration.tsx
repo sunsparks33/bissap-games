@@ -22,6 +22,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { showLoadingAlert, showSuccessAlert } from '@/lib/alerts';
+import { useLanguage } from '@/context/LanguageContext';
 
 // Zod Schema Definition
 const memberSchema = z.object({
@@ -54,6 +55,7 @@ interface MultiStepTeamRegistrationProps {
 }
 
 export default function MultiStepTeamRegistration({ onSuccess, onClose }: MultiStepTeamRegistrationProps) {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [submittedData, setSubmittedData] = useState<TeamRegistrationFormData | null>(null);
   const [showToast, setShowToast] = useState(false);

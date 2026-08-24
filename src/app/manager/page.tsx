@@ -26,6 +26,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import { showLoadingAlert, showSuccessAlert, showErrorAlert, showConfirmAlert } from '@/lib/alerts';
 
 interface Athlete {
@@ -69,6 +70,7 @@ interface Score {
 }
 
 export default function ManagerPanel() {
+  const { t } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [authError, setAuthError] = useState('');
