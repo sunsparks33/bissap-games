@@ -27,7 +27,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // 1. Rate limiting check
   const rl = checkRateLimit(request, 20, 60000);
   if (!rl.success) {
     return rateLimitResponse(rl.reset);
@@ -36,7 +35,6 @@ export async function POST(request: Request) {
   try {
     const rawBody = await request.json();
     
-    // 2. Validate payload with Zod
     const validationResult = TeamCreateSchema.safeParse(rawBody);
     if (!validationResult.success) {
       const firstError = validationResult.error.issues[0]?.message || 'Invalid team input payload';
@@ -45,7 +43,6 @@ export async function POST(request: Request) {
 
     const { name, captainId } = validationResult.data;
 
-    // 3. Execute DB operations in an atomic transaction
     const team = await prisma.$transaction(async (tx) => {
       const createdTeam = await tx.team.create({
         data: {
@@ -74,5 +71,51 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'A team with this name already exists' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  const rl = checkRateLimit(request, 20, 60000);
+  if (!rl.success) {
+    return rateLimitResponse(rl.reset);
+  }
+
+  try {
+    const body = await request.json();
+    const { teamId, captainId } = body;
+
+    if (!teamId || !captainId) {
+      return NextResponse.json({ error: 'Team ID and Captain ID are required' }, { status: 400 });
+    }
+
+    const updatedTeam = await prisma.$transaction(async (tx) => {
+      // 1. Update Athlete to be CAPTAIN of this team
+      await tx.athlete.update({
+        where: { id: captainId },
+        data: {
+          teamId,
+          role: 'CAPTAIN',
+        },
+      });
+
+      // 2. Update Team captain reference
+      const team = await tx.team.update({
+        where: { id: teamId },
+        data: {
+          captainId,
+        },
+        include: {
+          captain: true,
+          athletes: true,
+        },
+      });
+
+      return team;
+    });
+
+    return NextResponse.json(updatedTeam, { status: 200 });
+  } catch (error: any) {
+    console.error('Error assigning captain:', error);
+    return NextResponse.json({ error: 'Failed to assign captain to team' }, { status: 500 });
   }
 }

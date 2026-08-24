@@ -20,7 +20,8 @@ import {
   Unlock,
   ShieldCheck,
   Zap,
-  MapPin
+  MapPin,
+  UserCheck
 } from 'lucide-react';
 
 interface Athlete {
@@ -68,7 +69,7 @@ export default function ManagerPanel() {
   const [passcode, setPasscode] = useState('');
   const [authError, setAuthError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'athletes' | 'events' | 'scores'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'captains' | 'athletes' | 'events' | 'scores'>('overview');
   
   // Data states
   const [teams, setTeams] = useState<Team[]>([]);
@@ -81,14 +82,25 @@ export default function ManagerPanel() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Form states
+  // 1. Team form
   const [teamName, setTeamName] = useState('');
   const [teamCaptainId, setTeamCaptainId] = useState('');
 
+  // 2. Captain form & Assign form
+  const [captainName, setCaptainName] = useState('');
+  const [captainEmail, setCaptainEmail] = useState('');
+  const [captainTeamId, setCaptainTeamId] = useState('');
+  
+  const [assignTeamId, setAssignTeamId] = useState('');
+  const [assignCaptainId, setAssignCaptainId] = useState('');
+
+  // 3. Athlete form
   const [athleteName, setAthleteName] = useState('');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [athleteRole, setAthleteRole] = useState<'CAPTAIN' | 'MEMBER'>('MEMBER');
   const [athleteTeamId, setAthleteTeamId] = useState('');
 
+  // 4. Event form
   const [eventName, setEventName] = useState('');
   const [eventDesc, setEventDesc] = useState('');
   const [eventMaxTeams, setEventMaxTeams] = useState('12');
@@ -96,6 +108,7 @@ export default function ManagerPanel() {
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('Ain Diab, Casablanca');
 
+  // 5. Score form
   const [scoreTeamId, setScoreTeamId] = useState('');
   const [scoreEventId, setScoreEventId] = useState('');
   const [scorePoints, setScorePoints] = useState('');
@@ -153,6 +166,7 @@ export default function ManagerPanel() {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Submit Handlers
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim()) return;
@@ -171,6 +185,67 @@ export default function ManagerPanel() {
       showNotification('success', `Team "${data.name}" registered successfully!`);
       setTeamName('');
       setTeamCaptainId('');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreateCaptain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!captainName.trim() || !captainEmail.trim()) return;
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/athletes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: captainName.trim(),
+          email: captainEmail.trim(),
+          role: 'CAPTAIN',
+          teamId: captainTeamId || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to register captain');
+
+      showNotification('success', `Captain "${data.name}" created and assigned successfully!`);
+      setCaptainName('');
+      setCaptainEmail('');
+      setCaptainTeamId('');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAssignCaptainToTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignTeamId || !assignCaptainId) return;
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId: assignTeamId,
+          captainId: assignCaptainId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to assign captain');
+
+      showNotification('success', `Captain assigned to team "${data.name}" successfully!`);
+      setAssignTeamId('');
+      setAssignCaptainId('');
       fetchData();
     } catch (err: any) {
       showNotification('error', err.message);
@@ -328,6 +403,8 @@ export default function ManagerPanel() {
     );
   }
 
+  const captainsList = athletes.filter(a => a.role === 'CAPTAIN');
+
   return (
     <div className="space-y-8">
       {/* Header Banner */}
@@ -341,7 +418,7 @@ export default function ManagerPanel() {
               Manager Panel
             </h1>
             <p className="text-gray-400 text-sm mt-1 max-w-xl">
-              Register teams, athletes, schedule multi-city relay & strength events, and record live scoring.
+              Register teams, captains, athletes, schedule multi-city events, and record live scoring.
             </p>
           </div>
 
@@ -360,6 +437,7 @@ export default function ManagerPanel() {
           {[
             { id: 'overview', label: 'Dashboard Overview', icon: Trophy },
             { id: 'teams', label: 'Teams', icon: Users, count: teams.length },
+            { id: 'captains', label: 'Captains', icon: Crown, count: captainsList.length },
             { id: 'athletes', label: 'Athletes', icon: UserPlus, count: athletes.length },
             { id: 'events', label: 'Events', icon: Calendar, count: events.length },
             { id: 'scores', label: 'Score & Standings', icon: Medal, count: scores.length },
@@ -426,11 +504,11 @@ export default function ManagerPanel() {
 
             <div className="glass-panel p-5">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-xs uppercase tracking-wider font-bold">Total Athletes</span>
-                <UserPlus className="w-5 h-5 text-[#F59E0B]" />
+                <span className="text-gray-400 text-xs uppercase tracking-wider font-bold">Team Captains</span>
+                <Crown className="w-5 h-5 text-[#F59E0B]" />
               </div>
-              <div className="text-3xl font-extrabold text-white mt-3">{athletes.length}</div>
-              <p className="text-xs text-gray-400 mt-1">{athletes.filter(a => a.role === 'CAPTAIN').length} Captains</p>
+              <div className="text-3xl font-extrabold text-white mt-3">{captainsList.length}</div>
+              <p className="text-xs text-gray-400 mt-1">Assigned squad leaders</p>
             </div>
 
             <div className="glass-panel p-5">
@@ -485,10 +563,10 @@ export default function ManagerPanel() {
                   onChange={(e) => setTeamCaptainId(e.target.value)}
                   className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF1E56]"
                 >
-                  <option value="">-- Select Registered Athlete --</option>
+                  <option value="">-- Select Registered Athlete / Captain --</option>
                   {athletes.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name} ({a.email})
+                      {a.name} ({a.email}) [{a.role}]
                     </option>
                   ))}
                 </select>
@@ -509,23 +587,190 @@ export default function ManagerPanel() {
               <Users className="w-5 h-5 text-[#FF1E56]" /> Registered Teams ({teams.length})
             </h3>
             <div className="space-y-3">
-              {teams.map(t => (
-                <div key={t.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-white text-base">{t.name}</div>
-                    <div className="text-xs text-gray-400">Capt: {t.captain?.name || 'Unassigned'} • {t.athletes?.length || 0} Members</div>
+              {teams.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm">No teams registered yet.</div>
+              ) : (
+                teams.map(t => (
+                  <div key={t.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-white text-base">{t.name}</div>
+                      <div className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
+                        <span className="flex items-center gap-1 text-[#F59E0B] font-semibold">
+                          <Crown className="w-3.5 h-3.5" /> {t.captain?.name || 'Unassigned Captain'}
+                        </span>
+                        <span>•</span>
+                        <span>{t.athletes?.length || 0} Roster Members</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-extrabold text-lg text-gradient-bissap">{t.totalPoints} pts</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-extrabold text-lg text-gradient-bissap">{t.totalPoints} pts</div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. TAB CONTENT: ATHLETES */}
+      {/* 3. TAB CONTENT: CAPTAINS (NEW DEDICATED CAPTAINS TAB) */}
+      {activeTab === 'captains' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="glass-panel p-6 lg:col-span-1 space-y-6">
+            {/* Form 1: Add New Captain */}
+            <div className="space-y-4">
+              <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
+                <Crown className="w-5 h-5 text-[#F59E0B]" /> Add New Captain
+              </h3>
+              <form onSubmit={handleCreateCaptain} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    Captain Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Youssef El Mansouri"
+                    value={captainName}
+                    onChange={(e) => setCaptainName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    Captain Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="captain@domain.ma"
+                    value={captainEmail}
+                    onChange={(e) => setCaptainEmail(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                    Assign to Team (Optional)
+                  </label>
+                  <select
+                    value={captainTeamId}
+                    onChange={(e) => setCaptainTeamId(e.target.value)}
+                    className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#F59E0B]"
+                  >
+                    <option value="">-- Select Team --</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#FBBF24] text-black font-extrabold py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-[#F59E0B]/20"
+                >
+                  {submitting ? 'Creating...' : 'Register Captain'}
+                </button>
+              </form>
+            </div>
+
+            {/* Form 2: Assign Captain to Existing Team */}
+            <div className="pt-6 border-t border-white/10 space-y-4">
+              <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-[#FF1E56]" /> Assign Captain to Team
+              </h3>
+              <form onSubmit={handleAssignCaptainToTeam} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
+                    Select Team *
+                  </label>
+                  <select
+                    required
+                    value={assignTeamId}
+                    onChange={(e) => setAssignTeamId(e.target.value)}
+                    className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF1E56]"
+                  >
+                    <option value="">-- Select Team --</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} (Capt: {t.captain?.name || 'None'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
+                    Select Captain *
+                  </label>
+                  <select
+                    required
+                    value={assignCaptainId}
+                    onChange={(e) => setAssignCaptainId(e.target.value)}
+                    className="w-full bg-[#12161F] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#FF1E56]"
+                  >
+                    <option value="">-- Select Registered Athlete / Captain --</option>
+                    {athletes.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-bissap w-full py-2 text-xs font-bold"
+                >
+                  Link Captain to Team
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="glass-panel p-6 lg:col-span-2 space-y-4">
+            <h3 className="font-extrabold text-lg text-white flex items-center gap-2">
+              <Crown className="w-5 h-5 text-[#F59E0B]" /> Team Captains ({captainsList.length})
+            </h3>
+            <div className="space-y-3">
+              {captainsList.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm">No team captains registered yet.</div>
+              ) : (
+                captainsList.map(c => (
+                  <div key={c.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-white text-base flex items-center gap-2">
+                        <span>{c.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40 font-bold uppercase">
+                          CAPTAIN
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{c.email}</div>
+                    </div>
+                    <div className="text-right">
+                      {c.team ? (
+                        <div className="text-sm font-extrabold text-white bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                          {c.team.name}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic">Unassigned Squad</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. TAB CONTENT: ATHLETES */}
       {activeTab === 'athletes' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-4">
@@ -607,27 +852,31 @@ export default function ManagerPanel() {
             <h3 className="font-extrabold text-lg text-white mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-[#F59E0B]" /> Registered Athletes ({athletes.length})
             </h3>
-            <div className="space-y-3">
-              {athletes.map(a => (
-                <div key={a.id} className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-bold text-white text-sm">{a.name}</div>
-                    <div className="text-gray-400">{a.email}</div>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+              {athletes.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm">No athletes registered yet.</div>
+              ) : (
+                athletes.map(a => (
+                  <div key={a.id} className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-bold text-white text-sm">{a.name}</div>
+                      <div className="text-gray-400">{a.email}</div>
+                    </div>
+                    <div className="text-right flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.role === 'CAPTAIN' ? 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40' : 'bg-white/10 text-gray-300'}`}>
+                        {a.role}
+                      </span>
+                      <span className="text-gray-300 font-semibold">{a.team?.name || 'Free Agent'}</span>
+                    </div>
                   </div>
-                  <div className="text-right flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.role === 'CAPTAIN' ? 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40' : 'bg-white/10 text-gray-300'}`}>
-                      {a.role}
-                    </span>
-                    <span className="text-gray-400">{a.team?.name || 'Free Agent'}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. TAB CONTENT: EVENTS */}
+      {/* 5. TAB CONTENT: EVENTS */}
       {activeTab === 'events' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-4">
@@ -736,27 +985,31 @@ export default function ManagerPanel() {
               <Flag className="w-5 h-5 text-[#FF1E56]" /> Scheduled Events ({events.length})
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {events.map((e) => (
-                <div key={e.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-base">{e.name}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FF1E56]/20 text-[#FF1E56]">
-                      {e.city || 'Casablanca'}
-                    </span>
+              {events.length === 0 ? (
+                <div className="col-span-2 py-8 text-center text-gray-500 text-sm">No events scheduled yet.</div>
+              ) : (
+                events.map((e) => (
+                  <div key={e.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-base">{e.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FF1E56]/20 text-[#FF1E56]">
+                        {e.city || 'Casablanca'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{e.description || 'No description provided.'}</p>
+                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
+                      <span>📍 {e.location || e.city}</span>
+                      <span>Max {e.maxTeams} Teams</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{e.description || 'No description provided.'}</p>
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
-                    <span>📍 {e.location || e.city}</span>
-                    <span>Max {e.maxTeams} Teams</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* 5. TAB CONTENT: SCORES */}
+      {/* 6. TAB CONTENT: SCORES */}
       {activeTab === 'scores' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="glass-panel p-6 lg:col-span-1 space-y-4">
@@ -846,17 +1099,21 @@ export default function ManagerPanel() {
               <Trophy className="w-5 h-5 text-emerald-400" /> Score Log History ({scores.length})
             </h3>
             <div className="space-y-3">
-              {scores.map(s => (
-                <div key={s.id} className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-bold text-white text-sm">{s.team?.name}</div>
-                    <div className="text-gray-400">{s.event?.name}</div>
+              {scores.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm">No scores recorded yet.</div>
+              ) : (
+                scores.map(s => (
+                  <div key={s.id} className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-bold text-white text-sm">{s.team?.name}</div>
+                      <div className="text-gray-400">{s.event?.name}</div>
+                    </div>
+                    <div className="text-right font-extrabold text-emerald-400 text-base">
+                      +{s.pointsAwarded} pts
+                    </div>
                   </div>
-                  <div className="text-right font-extrabold text-emerald-400 text-base">
-                    +{s.pointsAwarded} pts
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
