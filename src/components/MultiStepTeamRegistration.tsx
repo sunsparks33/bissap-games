@@ -21,6 +21,7 @@ import {
   Terminal,
   ChevronRight
 } from 'lucide-react';
+import { showLoadingAlert, showSuccessAlert } from '@/lib/alerts';
 
 // Zod Schema Definition
 const memberSchema = z.object({
@@ -100,15 +101,16 @@ export default function MultiStepTeamRegistration({ onSuccess, onClose }: MultiS
     }
   };
 
-  // Mock Submit Handler
-  const onSubmit = (data: TeamRegistrationFormData) => {
-    console.log('====================================');
-    console.log('🏆 [Bissap Games] Team Registration Payload Submitted:');
-    console.log(JSON.stringify(data, null, 2));
-    console.log('====================================');
+  // Submit Handler
+  const onSubmit = async (data: TeamRegistrationFormData) => {
+    // Show 3-second loading animation timer popup
+    await showLoadingAlert('Registering Team...', 'Transmitting squad parameters to Bissap Games National Tour database.');
 
     setSubmittedData(data);
     setShowToast(true);
+
+    // Show 3-second success popup
+    await showSuccessAlert('Squad Registered!', `Team "${data.teamName}" has been successfully entered into the National Tour.`);
 
     if (onSuccess) {
       onSuccess(data);

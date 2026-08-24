@@ -26,6 +26,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
+import { showLoadingAlert, showSuccessAlert, showErrorAlert, showConfirmAlert } from '@/lib/alerts';
 
 interface Athlete {
   id: string;
@@ -184,6 +185,42 @@ export default function ManagerPanel() {
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 4000);
+    if (type === 'success') {
+      showSuccessAlert('Action Completed!', message);
+    } else {
+      showErrorAlert('Action Failed', message);
+    }
+  };
+
+  // --- LOGIN HANDLER ---
+  const handleLoginWithAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setLoading(true);
+    await showLoadingAlert('Authenticating...', 'Verifying admin passcode with server security.');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      setIsAuthenticated(true);
+      setPasscode('');
+      await showSuccessAlert('Access Granted!', 'Admin control center unlocked successfully.');
+      fetchData();
+    } catch (err: any) {
+      setAuthError(err.message || 'Invalid Admin Passcode. Access denied.');
+      await showErrorAlert('Access Denied', err.message || 'Invalid Admin Passcode.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- CREATE HANDLERS ---
@@ -191,6 +228,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!teamName.trim()) return;
     setSubmitting(true);
+    await showLoadingAlert('Creating Squad...', 'Registering new team entry in database.');
 
     try {
       const res = await fetch('/api/teams', {
@@ -202,12 +240,12 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create team');
 
-      showNotification('success', `Team "${data.name}" registered successfully!`);
       setTeamName('');
       setTeamCaptainId('');
+      await showSuccessAlert('Team Registered!', `Team "${data.name}" has been created.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Registration Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -217,6 +255,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!captainName.trim() || !captainEmail.trim()) return;
     setSubmitting(true);
+    await showLoadingAlert('Registering Captain...', 'Adding new captain and setting team assignment.');
 
     try {
       const res = await fetch('/api/athletes', {
@@ -233,13 +272,13 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to register captain');
 
-      showNotification('success', `Captain "${data.name}" created successfully!`);
       setCaptainName('');
       setCaptainEmail('');
       setCaptainTeamId('');
+      await showSuccessAlert('Captain Registered!', `Captain "${data.name}" added successfully.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Registration Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -249,6 +288,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!assignTeamId || !assignCaptainId) return;
     setSubmitting(true);
+    await showLoadingAlert('Linking Captain...', 'Updating squad leadership assignment.');
 
     try {
       const res = await fetch('/api/teams', {
@@ -263,12 +303,12 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to assign captain');
 
-      showNotification('success', `Captain assigned to team "${data.name}" successfully!`);
       setAssignTeamId('');
       setAssignCaptainId('');
+      await showSuccessAlert('Captain Assigned!', `Captain linked to team "${data.name}".`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Assignment Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -278,6 +318,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!athleteName.trim() || !athleteEmail.trim()) return;
     setSubmitting(true);
+    await showLoadingAlert('Registering Athlete...', 'Adding athlete details to national roster.');
 
     try {
       const res = await fetch('/api/athletes', {
@@ -294,14 +335,14 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to register athlete');
 
-      showNotification('success', `Athlete "${data.name}" registered successfully!`);
       setAthleteName('');
       setAthleteEmail('');
       setAthleteRole('MEMBER');
       setAthleteTeamId('');
+      await showSuccessAlert('Athlete Registered!', `Athlete "${data.name}" added to roster.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Registration Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -311,6 +352,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!eventName.trim() || !eventDate || !eventMaxTeams) return;
     setSubmitting(true);
+    await showLoadingAlert('Scheduling Event...', 'Adding event to Moroccan National Tour calendar.');
 
     try {
       const res = await fetch('/api/events', {
@@ -329,14 +371,14 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create event');
 
-      showNotification('success', `Event "${data.name}" created successfully!`);
       setEventName('');
       setEventDesc('');
       setEventMaxTeams('12');
       setEventDate('');
+      await showSuccessAlert('Event Scheduled!', `Event "${data.name}" in ${data.city || 'Casablanca'} created.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Scheduling Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -346,6 +388,7 @@ export default function ManagerPanel() {
     e.preventDefault();
     if (!scoreTeamId || !scoreEventId || !scorePoints) return;
     setSubmitting(true);
+    await showLoadingAlert('Awarding Points...', 'Logging event scores & computing leaderboard standings.');
 
     try {
       const res = await fetch('/api/scores', {
@@ -363,15 +406,15 @@ export default function ManagerPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to record score');
 
-      showNotification('success', `Points awarded successfully! Team total points recalculated.`);
       setScoreTeamId('');
       setScoreEventId('');
       setScorePoints('');
       setScoreRank('');
       setScoreNotes('');
+      await showSuccessAlert('Points Logged!', 'Score recorded & squad totals recalculated.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Scoring Failed', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -379,50 +422,62 @@ export default function ManagerPanel() {
 
   // --- DELETE HANDLERS ---
   const handleDeleteTeam = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete Team "${name}"? This action cannot be undone.`)) return;
+    const confirmed = await showConfirmAlert(`Delete Team "${name}"?`, 'This will unlink squad members and remove the team entry.', 'Yes, Delete Team');
+    if (!confirmed) return;
+
+    await showLoadingAlert('Deleting Team...', 'Removing team and updating dependencies.');
     try {
       const res = await fetch(`/api/teams?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete team');
-      showNotification('success', `Team "${name}" deleted.`);
+      await showSuccessAlert('Team Deleted', `Team "${name}" has been removed.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Deletion Failed', err.message);
     }
   };
 
   const handleDeleteAthlete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete Athlete "${name}"?`)) return;
+    const confirmed = await showConfirmAlert(`Delete Athlete "${name}"?`, 'This athlete will be removed from squad rosters.', 'Yes, Delete');
+    if (!confirmed) return;
+
+    await showLoadingAlert('Deleting Athlete...', 'Removing athlete from roster.');
     try {
       const res = await fetch(`/api/athletes?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete athlete');
-      showNotification('success', `Athlete "${name}" deleted.`);
+      await showSuccessAlert('Athlete Deleted', `Athlete "${name}" has been removed.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Deletion Failed', err.message);
     }
   };
 
   const handleDeleteEvent = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete Event "${name}"?`)) return;
+    const confirmed = await showConfirmAlert(`Delete Event "${name}"?`, 'This event will be removed from the tour schedule.', 'Yes, Delete');
+    if (!confirmed) return;
+
+    await showLoadingAlert('Deleting Event...', 'Removing event entry.');
     try {
       const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete event');
-      showNotification('success', `Event "${name}" deleted.`);
+      await showSuccessAlert('Event Deleted', `Event "${name}" has been removed.`);
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Deletion Failed', err.message);
     }
   };
 
   const handleDeleteScore = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this score entry?')) return;
+    const confirmed = await showConfirmAlert('Delete Score Entry?', 'Team total points will be recalculated automatically.', 'Yes, Delete');
+    if (!confirmed) return;
+
+    await showLoadingAlert('Deleting Score...', 'Removing score entry & updating standings.');
     try {
       const res = await fetch(`/api/scores?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete score');
-      showNotification('success', 'Score entry deleted and team total points recalculated.');
+      await showSuccessAlert('Score Deleted', 'Score removed & team standings recalculated.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Deletion Failed', err.message);
     }
   };
 
@@ -430,6 +485,7 @@ export default function ManagerPanel() {
   const handleUpdateTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeam) return;
+    await showLoadingAlert('Updating Team...', 'Saving team changes to database.');
     try {
       const res = await fetch('/api/teams', {
         method: 'PUT',
@@ -441,17 +497,18 @@ export default function ManagerPanel() {
         }),
       });
       if (!res.ok) throw new Error('Failed to update team');
-      showNotification('success', 'Team updated successfully.');
       setEditingTeam(null);
+      await showSuccessAlert('Team Updated', 'Team details updated successfully.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Update Failed', err.message);
     }
   };
 
   const handleUpdateAthleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAthlete) return;
+    await showLoadingAlert('Updating Athlete...', 'Saving athlete roster details.');
     try {
       const res = await fetch('/api/athletes', {
         method: 'PUT',
@@ -465,17 +522,18 @@ export default function ManagerPanel() {
         }),
       });
       if (!res.ok) throw new Error('Failed to update athlete');
-      showNotification('success', 'Athlete updated successfully.');
       setEditingAthlete(null);
+      await showSuccessAlert('Athlete Updated', 'Athlete roster details updated successfully.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Update Failed', err.message);
     }
   };
 
   const handleUpdateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
+    await showLoadingAlert('Updating Event...', 'Saving event schedule details.');
     try {
       const res = await fetch('/api/events', {
         method: 'PUT',
@@ -491,17 +549,18 @@ export default function ManagerPanel() {
         }),
       });
       if (!res.ok) throw new Error('Failed to update event');
-      showNotification('success', 'Event updated successfully.');
       setEditingEvent(null);
+      await showSuccessAlert('Event Updated', 'Event details updated successfully.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Update Failed', err.message);
     }
   };
 
   const handleUpdateScoreSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingScore) return;
+    await showLoadingAlert('Updating Score...', 'Recalculating team standings.');
     try {
       const res = await fetch('/api/scores', {
         method: 'POST',
@@ -515,11 +574,11 @@ export default function ManagerPanel() {
         }),
       });
       if (!res.ok) throw new Error('Failed to update score');
-      showNotification('success', 'Score updated successfully.');
       setEditingScore(null);
+      await showSuccessAlert('Score Updated', 'Score updated & team totals recalculated.');
       fetchData();
     } catch (err: any) {
-      showNotification('error', err.message);
+      await showErrorAlert('Update Failed', err.message);
     }
   };
 
@@ -538,7 +597,7 @@ export default function ManagerPanel() {
             <p className="text-xs text-gray-400 mt-1">Enter your admin security passcode to access score control panel.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4 text-left">
+          <form onSubmit={handleLoginWithAlert} className="space-y-4 text-left">
             <div>
               <label className="block text-xs font-extrabold text-gray-300 uppercase tracking-wider mb-1.5">
                 Passcode
