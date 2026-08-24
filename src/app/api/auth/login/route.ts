@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Passcode is required' }, { status: 400 });
     }
 
-    const expectedPasscode = process.env.ADMIN_PASSCODE || 'Redaaa@1234@';
+    const expectedPasscode = process.env.ADMIN_PASSCODE || 'bissap';
 
     // 2. Timing-safe comparison to prevent timing attacks
     const bufferProvided = Buffer.from(passcode);
