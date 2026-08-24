@@ -1,0 +1,78 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  CAPTAIN
+  MEMBER
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  captainId   String?  @unique
+  captain     Athlete? @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
+  totalPoints Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  athletes Athlete[] @relation("TeamMembers")
+  scores   Score[]
+
+  @@map("teams")
+}
+
+model Athlete {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      Role     @default(MEMBER)
+  teamId    String?
+  team      Team?    @relation("TeamMembers", fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  captainOf Team? @relation("TeamCaptain")
+
+  @@map("athletes")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String   // e.g., 'Ain Diab 5k Relay' or 'Strength Challenge'
+  description String?
+  maxTeams    Int
+  date        DateTime
+  location    String?  @default("Ain Diab, Casablanca")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scores Score[]
+
+  @@map("events")
+}
+
+model Score {
+  id            String   @id @default(cuid())
+  teamId        String
+  eventId       String
+  pointsAwarded Int
+  rank          Int?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, eventId])
+  @@map("scores")
+}
